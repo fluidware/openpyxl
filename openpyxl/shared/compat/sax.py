@@ -61,11 +61,11 @@ else:
 class XMLGenerator(CompatXMLGenerator):
 
     def startElementNS(self, name, qname, attrs):
-        self._write('<' + self._qname(name))
+        self._write(u'<' + self._qname(name))
 
         for (name, value) in attrs.items():
-            self._write(' %s=%s' % (self._qname(name), quoteattr(value)))
-        self._write('>')
+            self._write(u' %s=%s' % (self._qname(name), quoteattr(value)))
+        self._write(u'>')
 
     def _write(self, text):
         self._out.write(text.encode(self._encoding, _error_handling))
