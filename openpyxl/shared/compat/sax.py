@@ -52,7 +52,10 @@ if sys.version_info < (2, 5):
 
 else:
     CompatXMLGenerator = _XMLGenerator
-    from xml.sax.saxutils import _error_handling
+    try:
+        from xml.sax.saxutils import _error_handling
+    except ImportError:
+        _error_handling = "xmlcharrefreplace"
 
 
 class XMLGenerator(CompatXMLGenerator):
