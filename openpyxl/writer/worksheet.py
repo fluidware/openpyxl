@@ -94,6 +94,7 @@ def write_worksheet(worksheet, string_table, style_table):
     write_worksheet_mergecells(doc, worksheet)
     write_worksheet_datavalidations(doc, worksheet)
     write_worksheet_hyperlinks(doc, worksheet)
+    write_cfrules(doc, worksheet)
 
     options = worksheet.page_setup.options
     if options:
@@ -309,6 +310,29 @@ def write_worksheet_hyperlinks(doc, worksheet):
                         'r:id': cell.hyperlink_rel_id}
                 tag(doc, 'hyperlink', attrs)
         end_tag(doc, 'hyperlinks')
+
+def write_cfrules(doc, worksheet):
+    """Write worksheet conditional formatting rules to xml."""
+    i = 0
+    if worksheet.cf_rules.values():
+        for range, rules in worksheet.cf_rules.iteritems():
+            if not len(rules):
+                continue
+            start_tag(doc, 'conditionalFormatting', {'sqref': range})
+            for rule in rules:
+                type = rule.type
+                start_tag(doc, 'cfRule', {'type': type, 'priority': str(i)})
+                attrs = {}
+                if not rule.showValue:
+                    attrs['showValue']="0"
+                start_tag(doc, type, attrs)
+                tag(doc, 'cfvo', {'type': rule.min.type, 'val': str(rule.min.val)})
+                tag(doc, 'cfvo', {'type': rule.max.type, 'val': str(rule.max.val)})
+                tag(doc, 'color', {'rgb': str(rule.color.index)})
+                end_tag(doc, type)
+                end_tag(doc, 'cfRule')
+                i += 1
+            end_tag(doc, 'conditionalFormatting')
 
 
 def write_worksheet_rels(worksheet, idx):

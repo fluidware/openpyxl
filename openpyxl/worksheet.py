@@ -38,7 +38,7 @@ from openpyxl.shared.exc import SheetTitleException, \
     InsufficientCoordinatesException, CellCoordinatesException, \
     NamedRangeException
 from openpyxl.shared.password_hasher import hash_password
-from openpyxl.style import Style, DEFAULTS as DEFAULTS_STYLE
+from openpyxl.style import Style, DEFAULTS as DEFAULTS_STYLE, Color
 from openpyxl.drawing import Drawing
 from openpyxl.namedrange import NamedRangeContainingValue
 from openpyxl.shared.compat import OrderedDict, unicode, xrange, basestring
@@ -338,6 +338,21 @@ class ColumnDimension(object):
         self.collapsed = False
         self.style_index = 0
 
+class CFRule(object):
+    class Limit(object):
+        __slots__ = ('type', 'val')
+        def __init__(self, type='num', val=0):
+            self.type, self.val = type, val
+
+    __slots__ = ('type', 'showValue', 'min', 'max', 'color')
+
+    def __init__(self, type = 'dataBar', showValue=False):
+        self.type = type
+        self.showValue = showValue
+        self.min = CFRule.Limit(val=0)
+        self.max = CFRule.Limit(val=1)
+        self.color = Color(Color.DARKBLUE)
+
 class PageMargins(object):
     """Information about page margins for view/print layouts."""
 
@@ -447,6 +462,7 @@ class Worksheet(object):
         self._images = []
         self._merged_cells = []
         self.relationships = []
+        self.cf_rules = {}
         self._data_validations = []
         self.selected_cell = 'A1'
         self.active_cell = 'A1'
