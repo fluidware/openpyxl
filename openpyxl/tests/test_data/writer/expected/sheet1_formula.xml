@@ -11,7 +11,7 @@
     </sheetViews>
     <sheetFormatPr defaultRowHeight="15" />
     <cols>
-        <col max="6" min="6" width="9.10" />
+        <col collapsed="0" max="6" min="6" width="9.10" />
     </cols>    
     <sheetData>
         <row r="1" spans="1:6">
@@ -25,7 +25,7 @@
             </c>
         </row>
         <row r="3" spans="1:6">
-            <c r="F3">
+            <c r="F3" t="f">
                 <f>F1+F2</f><v />
             </c>
         </row>

@@ -1,6 +1,6 @@
 # file openpyxl/tests/test_iter.py
 
-# Copyright (c) 2010-2011 openpyxl
+# Copyright (c) 2010 openpyxl
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,49 +21,39 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 from nose.tools import eq_, raises, assert_raises
 import os.path as osp
 from openpyxl.tests.helper import DATADIR
-from openpyxl.reader.iter_worksheet import get_range_boundaries
+from openpyxl.reader.iter_worksheet import read_worksheet, get_range_boundaries
 from openpyxl.reader.excel import load_workbook
-from openpyxl.shared.compat import xrange
 import datetime
 
 class TestWorksheet(object):
 
     workbook_name = osp.join(DATADIR, 'genuine', 'empty.xlsx')
 
-    def _open_wb(self):
-        return load_workbook(filename = self.workbook_name, use_iterators = True)
-
-class TestDims(TestWorksheet):
-    expected = [ 'A1:G5', 'D1:K30', 'D2:D2', 'A1:C1' ]
-    def test_get_dimensions(self):
-        wb = self._open_wb()
-        for i, sheetn in enumerate(wb.get_sheet_names()):
-            ws = wb.get_sheet_by_name(name = sheetn)
-
-            eq_(ws._dimensions, self.expected[i])
-
-    def test_get_highest_column_iter(self):
-        wb = self._open_wb()
-        ws = wb.worksheets[0]
-        eq_(ws.get_highest_column(), 7)
-
 class TestText(TestWorksheet):
     sheet_name = 'Sheet1 - Text'
 
-    expected = [['This is cell A1 in Sheet 1', None, None, None, None, None, None],
-                [None, None, None, None, None, None, None],
-                [None, None, None, None, None, None, None],
-                [None, None, None, None, None, None, None],
-                [None, None, None, None, None, None, 'This is cell G5'], ]
+    expected = [['This is cell A1 in Sheet 1', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', 'This is cell G5'], ]
+
+    def test_read_fast(self):
+
+        for row, expected_row in zip(read_worksheet(self.workbook_name, self.sheet_name), self.expected):
+
+            row_values = [x.internal_value for x in row]
+
+            eq_(row_values, expected_row)
 
     def test_read_fast_integrated(self):
 
-        wb = self._open_wb()
+        wb = load_workbook(filename = self.workbook_name, use_iterators = True)
         ws = wb.get_sheet_by_name(name = self.sheet_name)
 
         for row, expected_row in zip(ws.iter_rows(), self.expected):
@@ -84,7 +74,7 @@ class TestText(TestWorksheet):
 
     def test_read_single_cell_range(self):
 
-        wb = self._open_wb()
+        wb = load_workbook(filename = self.workbook_name, use_iterators = True)
         ws = wb.get_sheet_by_name(name = self.sheet_name)
 
         eq_('This is cell A1 in Sheet 1', list(ws.iter_rows('A1'))[0][0].internal_value)
@@ -99,7 +89,7 @@ class TestIntegers(TestWorksheet):
 
     def test_read_fast_integrated(self):
 
-        wb = self._open_wb()
+        wb = load_workbook(filename = self.workbook_name, use_iterators = True)
         ws = wb.get_sheet_by_name(name = self.sheet_name)
 
         for row, expected_row in zip(ws.iter_rows(self.query_range), self.expected):
@@ -120,7 +110,7 @@ class TestDates(TestWorksheet):
 
     def test_read_single_cell_date(self):
 
-        wb = self._open_wb()
+        wb = load_workbook(filename = self.workbook_name, use_iterators = True)
         ws = wb.get_sheet_by_name(name = self.sheet_name)
 
         eq_(datetime.datetime(1973, 5, 20), list(ws.iter_rows('A1'))[0][0].internal_value)

@@ -1,7 +1,7 @@
 
 # file openpyxl/tests/test_dump.py
 
-# Copyright (c) 2010-2011 openpyxl
+# Copyright (c) 2010 openpyxl
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,77 +22,54 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 # Python stdlib imports
 from datetime import time, datetime
 
 # 3rd party imports
-from nose.tools import eq_, raises
+from nose.tools import eq_, raises, assert_raises
 
 from openpyxl.workbook import Workbook
-from openpyxl.writer import dump_worksheet
 from openpyxl.cell import get_column_letter
 
 from openpyxl.reader.excel import load_workbook
 
 from openpyxl.writer.strings import StringTableBuilder
 
-from openpyxl.shared.compat import NamedTemporaryFile, xrange
-from openpyxl.shared.exc import WorkbookAlreadySaved
+from tempfile import NamedTemporaryFile
 import os
-import os.path as osp
 import shutil
-
-def _get_test_filename():
-
-    test_file = NamedTemporaryFile(mode='w', prefix='openpyxl.', suffix='.xlsx', delete=False)
-    test_file.close()
-    return test_file.name
-
-def test_dump_sheet_title():
-
-    test_filename = _get_test_filename()
-
-    wb = Workbook(optimized_write=True)
-
-    ws = wb.create_sheet(title='Test1')
-    
-    wb.save(test_filename)
-
-    wb2 = load_workbook(test_filename, True)
-
-    ws = wb2.get_sheet_by_name('Test1')
-        
-    eq_('Test1', ws.title)
 
 def test_dump_sheet():
 
-    test_filename = _get_test_filename()
+    test_file = NamedTemporaryFile(prefix='openpyxl.', suffix='.xlsx', delete=False) 
+    test_file.close()
+    test_filename = test_file.name
 
-    wb = Workbook(optimized_write=True)
+    wb = Workbook(optimized_write = True)
 
     ws = wb.create_sheet()
 
-    letters = [get_column_letter(x + 1) for x in xrange(20)]
+    letters = [get_column_letter(x+1) for x in xrange(20)]
 
     expected_rows = []
 
     for row in xrange(20):
 
-        expected_rows.append(['%s%d' % (letter, row + 1) for letter in letters])
+        expected_rows.append(['%s%d' % (letter, row+1) for letter in letters])
 
     for row in xrange(20):
 
-        expected_rows.append([(row + 1) for letter in letters])
+        expected_rows.append([(row+1) for letter in letters])
 
     for row in xrange(10):
 
-        expected_rows.append([datetime(2010, ((x % 12) + 1), row + 1) for x in range(len(letters))])
+        expected_rows.append([datetime(2010, ((x % 12)+1), row+1) for x in range(len(letters))])
 
     for row in xrange(20):
 
-        expected_rows.append(['=%s%d' % (letter, row + 1) for letter in letters])
+        expected_rows.append(['=%s%d' % (letter, row+1) for letter in letters])
 
     for row in expected_rows:
 
@@ -128,55 +105,5 @@ def test_table_builder():
 
     table = dict(sb.get_table())
 
-    for key, idx in result.items():
+    for key,idx in result.iteritems():
         eq_(idx, table[key])
-
-def test_open_too_many_files():
-
-    test_filename = _get_test_filename()
-
-    wb = Workbook(optimized_write=True)
-
-    for i in range(200): # over 200 worksheets should raise an OSError ('too many open files') 
-
-        wb.create_sheet()
-
-    wb.save(test_filename)
-
-    os.remove(test_filename)
-
-def test_create_temp_file():
-
-    f = dump_worksheet.create_temporary_file()
-
-    if not osp.isfile(f):
-        raise Exception("The file %s does not exist" % f)
-
-@raises(WorkbookAlreadySaved)
-def test_dump_twice():
-
-    test_filename = _get_test_filename()
-
-    wb = Workbook(optimized_write=True)
-    ws = wb.create_sheet()
-    ws.append(['hello'])
-
-    wb.save(test_filename)
-    os.remove(test_filename)
-
-    wb.save(test_filename)
-
-@raises(WorkbookAlreadySaved)
-def test_append_after_save():
-
-    test_filename = _get_test_filename()
-
-    wb = Workbook(optimized_write=True)
-    ws = wb.create_sheet()
-    ws.append(['hello'])
-
-    wb.save(test_filename)
-    os.remove(test_filename)
-
-    ws.append(['hello'])
-

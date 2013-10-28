@@ -1,6 +1,6 @@
 # file openpyxl/writer/workbook.py
 
-# Copyright (c) 2010-2011 openpyxl
+# Copyright (c) 2010 openpyxl
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,18 +21,17 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 """Write the workbook global settings to the archive."""
 
 # package imports
 from openpyxl.shared.xmltools import Element, SubElement
 from openpyxl.cell import absolute_coordinate
-from openpyxl.shared.xmltools import get_document_content, fromstring, register_namespace
+from openpyxl.shared.xmltools import get_document_content
 from openpyxl.shared.ooxml import NAMESPACES, ARC_CORE, ARC_WORKBOOK, \
-       ARC_APP, ARC_THEME, ARC_STYLE, ARC_SHARED_STRINGS, ARC_CONTENT_TYPES
+       ARC_APP, ARC_THEME, ARC_STYLE, ARC_SHARED_STRINGS
 from openpyxl.shared.date_time import datetime_to_W3CDTF
-from openpyxl.namedrange import NamedRange, NamedRangeContainingValue
 
 
 def write_properties_core(properties):
@@ -49,66 +48,45 @@ def write_properties_core(properties):
     SubElement(root, 'dcterms:modified',
             {'xsi:type': 'dcterms:W3CDTF'}).text = \
             datetime_to_W3CDTF(properties.modified)
-    SubElement(root, 'dc:title').text = properties.title
-    SubElement(root, 'dc:description').text = properties.description
-    SubElement(root, 'dc:subject').text = properties.subject
-    SubElement(root, 'cp:keywords').text = properties.keywords
-    SubElement(root, 'cp:category').text = properties.category
     return get_document_content(root)
 
 
 def write_content_types(workbook):
     """Write the content-types xml."""
-    seen = set()
-    if workbook.vba_archive:
-        root = fromstring(workbook.vba_archive.read(ARC_CONTENT_TYPES))
-        register_namespace('', 'http://schemas.openxmlformats.org/package/2006/content-types')
-        for elem in root.findall('{http://schemas.openxmlformats.org/package/2006/content-types}Override'):
-            seen.add(elem.attrib['PartName'])
-    else:
-        root = Element('Types', {'xmlns': 'http://schemas.openxmlformats.org/package/2006/content-types'})
-        SubElement(root, 'Override', {'PartName': '/' + ARC_THEME, 'ContentType': 'application/vnd.openxmlformats-officedocument.theme+xml'})
-        SubElement(root, 'Override', {'PartName': '/' + ARC_STYLE, 'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml'})
-        SubElement(root, 'Default', {'Extension': 'rels', 'ContentType': 'application/vnd.openxmlformats-package.relationships+xml'})
-        SubElement(root, 'Default', {'Extension': 'xml', 'ContentType': 'application/xml'})
-        SubElement(root, 'Default', {'Extension': 'png', 'ContentType': 'image/png'})
-        SubElement(root, 'Override', {'PartName': '/' + ARC_WORKBOOK, 'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml'})
-        SubElement(root, 'Override', {'PartName': '/' + ARC_APP, 'ContentType': 'application/vnd.openxmlformats-officedocument.extended-properties+xml'})
-        SubElement(root, 'Override', {'PartName': '/' + ARC_CORE, 'ContentType': 'application/vnd.openxmlformats-package.core-properties+xml'})
-        SubElement(root, 'Override', {'PartName': '/' + ARC_SHARED_STRINGS, 'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml'})
+    root = Element('Types', {'xmlns': 'http://schemas.openxmlformats.org/package/2006/content-types'})
+    SubElement(root, 'Override', {'PartName': '/' + ARC_THEME, 'ContentType': 'application/vnd.openxmlformats-officedocument.theme+xml'})
+    SubElement(root, 'Override', {'PartName': '/' + ARC_STYLE, 'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml'})
+    SubElement(root, 'Default', {'Extension': 'rels', 'ContentType': 'application/vnd.openxmlformats-package.relationships+xml'})
+    SubElement(root, 'Default', {'Extension': 'xml', 'ContentType': 'application/xml'})
+    SubElement(root, 'Default', {'Extension': 'png', 'ContentType': 'image/png'})
+    SubElement(root, 'Override', {'PartName': '/' + ARC_WORKBOOK, 'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml'})
+    SubElement(root, 'Override', {'PartName': '/' + ARC_APP, 'ContentType': 'application/vnd.openxmlformats-officedocument.extended-properties+xml'})
+    SubElement(root, 'Override', {'PartName': '/' + ARC_CORE, 'ContentType': 'application/vnd.openxmlformats-package.core-properties+xml'})
+    SubElement(root, 'Override', {'PartName': '/' + ARC_SHARED_STRINGS, 'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml'})
 
     drawing_id = 1
     chart_id = 1
 
     for sheet_id, sheet in enumerate(workbook.worksheets):
-        part_name = '/xl/worksheets/sheet%d.xml' % (sheet_id + 1)
-        if part_name not in seen:
+        SubElement(root, 'Override',
+                {'PartName': '/xl/worksheets/sheet%d.xml' % (sheet_id + 1),
+                'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml'})
+        if sheet._charts or sheet._pictures:
             SubElement(root, 'Override',
-                       {'PartName': part_name,
-                        'ContentType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml'})
-        if sheet._charts or sheet._images:
-            part_name = '/xl/drawings/drawing%d.xml' % drawing_id
-            if part_name not in seen:
-                SubElement(root, 'Override',
-                           {'PartName': part_name,
-                            'ContentType': 'application/vnd.openxmlformats-officedocument.drawing+xml'})
+                {'PartName' : '/xl/drawings/drawing%d.xml' % (drawing_id),
+                'ContentType' : 'application/vnd.openxmlformats-officedocument.drawing+xml'})
             drawing_id += 1
 
             for chart in sheet._charts:
-                part_name = '/xl/charts/chart%d.xml' % chart_id
-
-                if part_name not in seen:
+                SubElement(root, 'Override',
+                    {'PartName' : '/xl/charts/chart%d.xml' % chart_id,
+                    'ContentType' : 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml'})
+                chart_id += 1
+                if chart._shapes:
                     SubElement(root, 'Override',
-                               {'PartName': part_name,
-                                'ContentType': 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml'})
-                    chart_id += 1
-                    if chart._shapes:
-                        part_name = '/xl/drawings/drawing%d.xml' % drawing_id
-                        if part_name not in seen:
-                            SubElement(root, 'Override',
-                                       {'PartName': part_name,
-                                        'ContentType': 'application/vnd.openxmlformats-officedocument.drawingml.chartshapes+xml'})
-                        drawing_id += 1
+                        {'PartName' : '/xl/drawings/drawing%d.xml' % drawing_id,
+                        'ContentType' : 'application/vnd.openxmlformats-officedocument.drawingml.chartshapes+xml'})
+                    drawing_id += 1
 
     return get_document_content(root)
 
@@ -179,41 +157,27 @@ def write_workbook(workbook):
                 'sheetId': '%d' % (i + 1), 'r:id': 'rId%d' % (i + 1)})
         if not sheet.sheet_state == sheet.SHEETSTATE_VISIBLE:
             sheet_node.set('state', sheet.sheet_state)
-
-    # Defined names
-    defined_names = SubElement(root, 'definedNames')
     # named ranges
+    defined_names = SubElement(root, 'definedNames')
     for named_range in workbook.get_named_ranges():
         name = SubElement(defined_names, 'definedName',
                 {'name': named_range.name})
-        if named_range.scope:
-            name.set('localSheetId', '%s' % workbook.get_index(named_range.scope))
 
-        if isinstance(named_range, NamedRange):
-            # as there can be many cells in one range, generate the list of ranges
-            dest_cells = []
-            for worksheet, range_name in named_range.destinations:
-                dest_cells.append("'%s'!%s" % (worksheet.title.replace("'", "''"),
-                absolute_coordinate(range_name)))
+        # as there can be many cells in one range, generate the list of ranges
+        dest_cells = []
+        cell_ids = []
+        for worksheet, range_name in named_range.destinations:
+            cell_ids.append(workbook.get_index(worksheet))
+            dest_cells.append("'%s'!%s" % (worksheet.title.replace("'", "''"),
+                                           absolute_coordinate(range_name)))
 
-            # finally write the cells list
-            name.text = ','.join(dest_cells)
-        else:
-            assert isinstance(named_range, NamedRangeContainingValue)
-            name.text = named_range.value
+        # for local ranges, we must check all the cells belong to the same sheet
+        base_id = cell_ids[0]
+        if named_range.local_only and all([x == base_id for x in cell_ids]):
+            name.set('localSheetId', '%s' % base_id)
 
-    # autoFilter
-    for i, sheet in enumerate(workbook.worksheets):
-        #continue
-        auto_filter = sheet.auto_filter
-        if not auto_filter:
-            continue
-        name = SubElement(defined_names, 'definedName',
-                dict(name='_xlnm._FilterDatabase',
-                     localSheetId=str(i),
-                     hidden='1'))
-        name.text = "'%s'!%s" % (sheet.title.replace("'", "''"),
-                                  absolute_coordinate(auto_filter))
+        # finally write the cells list
+        name.text = ','.join(dest_cells)
 
     SubElement(root, 'calcPr', {'calcId': '124519', 'calcMode': 'auto',
             'fullCalcOnLoad': '1'})
@@ -238,8 +202,4 @@ def write_workbook_rels(workbook):
     SubElement(root, 'Relationship',
             {'Id': 'rId%d' % (rid + 2), 'Target': 'theme/theme1.xml',
             'Type': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme'})
-    if workbook.vba_archive:
-        SubElement(root, 'Relationship',
-                   {'Id': 'rId%d' % (rid + 3), 'Target': 'vbaProject.bin',
-                    'Type': 'http://schemas.microsoft.com/office/2006/relationships/vbaProject'})
     return get_document_content(root)

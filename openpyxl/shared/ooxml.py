@@ -1,6 +1,6 @@
 # file openpyxl/shared/ooxml.py
 
-# Copyright (c) 2010-2011 openpyxl
+# Copyright (c) 2010 openpyxl
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 """Constants for fixed paths in a file and xml namespace urls."""
 
@@ -49,7 +49,6 @@ ARC_WORKBOOK = PACKAGE_XL + '/workbook.xml'
 ARC_STYLE = PACKAGE_XL + '/styles.xml'
 ARC_THEME = PACKAGE_THEME + '/theme1.xml'
 ARC_SHARED_STRINGS = PACKAGE_XL + '/sharedStrings.xml'
-ARC_VBA = ('xl/vba', 'xl/activeX', 'xl/drawings', 'xl/media', 'xl/ctrlProps', 'xl/worksheets/_rels', 'customUI', '_rels')
 
 NAMESPACES = {
     'cp': 'http://schemas.openxmlformats.org/package/2006/metadata/core-properties',
@@ -58,6 +57,5 @@ NAMESPACES = {
     'dcmitype': 'http://purl.org/dc/dcmitype/',
     'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
     'vt': 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes',
-    'xml': 'http://www.w3.org/XML/1998/namespace',
-    'main': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+    'xml': 'http://www.w3.org/XML/1998/namespace'
 }

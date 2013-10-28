@@ -1,7 +1,7 @@
 # file openpyxl/tests/test_number_format.py
 
-# Copyright (c) 2010-2011 openpyxl
-#
+# Copyright (c) 2010 openpyxl
+# 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -21,10 +21,11 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 # Python stdlib imports
-from datetime import datetime, date, timedelta
+from __future__ import with_statement
+from datetime import datetime, date
 
 # 3rd party imports
 from nose.tools import eq_, assert_almost_equal, assert_raises
@@ -34,18 +35,7 @@ from openpyxl.workbook import Workbook
 from openpyxl.worksheet import Worksheet
 from openpyxl.cell import Cell
 from openpyxl.style import NumberFormat
-from openpyxl.shared.date_time import SharedDate, CALENDAR_MAC_1904, CALENDAR_WINDOWS_1900
-
-import time
-
-# strptime fallback, thanks to coderfi
-# http://stackoverflow.com/questions/5585706/datetime-datetime-strptime-not-present-in-python-2-4-1/7226819#7226819
-if hasattr(datetime, 'strptime'):
-    #python 2.6
-    strptime = datetime.strptime
-else:
-    #python 2.4 equivalent
-    strptime = lambda date_string, format: datetime(*(time.strptime(date_string, format)[0:6]))
+from openpyxl.shared.date_time import SharedDate
 
 
 class TestNumberFormat(object):
@@ -66,8 +56,8 @@ class TestNumberFormat(object):
             eq_(self.sd.from_julian(julian), datetime)
 
         date_pairs= (
-                        (40167, datetime(2009, 12, 20)),
-                        (21980, datetime(1960,  3,  5)),
+                        (40167, datetime(2009, 12, 20)), 
+                        (21980, datetime(1960, 03, 05)), 
                     )
 
         for count, dt in date_pairs:
@@ -75,10 +65,6 @@ class TestNumberFormat(object):
 
     def test_convert_datetime_to_julian(self):
         eq_(40167, self.sd.datetime_to_julian(datetime(2009, 12, 20)))
-        eq_(40196.5939815, self.sd.datetime_to_julian(datetime(2010, 1, 18, 14, 15, 20, 1600)))
-
-    def test_convert_timedelta_to_julian(self):
-        eq_(1.125, self.sd.datetime_to_julian(timedelta(days=1, hours=3)))
 
     def test_insert_float(self):
         self.worksheet.cell('A1').value = 3.14
@@ -121,7 +107,7 @@ class TestNumberFormat(object):
         cell = self.worksheet.cell('A1')
 
         def check_date_pair(count, date_string):
-            cell.value = strptime(date_string, '%Y-%m-%d')
+            cell.value = datetime.strptime(date_string, '%Y-%m-%d')
             eq_(count, cell._value)
 
         date_pairs = (
@@ -142,7 +128,7 @@ class TestNumberFormat(object):
         def check_bad_date(year, month, day):
             assert_raises(ValueError, self.sd.to_julian, year, month, day)
 
-        bad_dates = ((1776,  7,  4), (1899, 12, 31), )
+        bad_dates = ((1776, 07, 04), (1899, 12, 31), )
         for year, month, day in bad_dates:
             yield check_bad_date, year, month, day
 
@@ -150,12 +136,7 @@ class TestNumberFormat(object):
         assert_raises(ValueError, self.sd.from_julian, -1)
 
     def test_mac_date(self):
-        self.sd.excel_base_date = CALENDAR_MAC_1904
-
-        datetuple = (2011, 10, 31)
-
-        dt = date(datetuple[0],datetuple[1],datetuple[2])
-        julian = self.sd.to_julian(datetuple[0],datetuple[1],datetuple[2])
-        reverse = self.sd.from_julian(julian).date()
-        eq_(dt,reverse)
-        self.sd.excel_base_date = CALENDAR_WINDOWS_1900
+        self.sd.excel_base_date = self.sd.CALENDAR_MAC_1904
+        assert_raises(NotImplementedError, self.sd.to_julian, 2000, 1, 1)
+        assert_raises(NotImplementedError, self.sd.from_julian, 1)
+        self.sd.excel_base_date = self.sd.CALENDAR_WINDOWS_1900

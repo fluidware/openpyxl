@@ -1,6 +1,6 @@
 # file openpyxl/tests/test_write.py
 
-# Copyright (c) 2010-2011 openpyxl
+# Copyright (c) 2010 openpyxl
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,17 +21,11 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 # Python stdlib imports
-try:
-    # Python 2
-    from StringIO import StringIO
-    BytesIO = StringIO
-except ImportError:
-    # Python 3
-    from io import BytesIO, StringIO
-import decimal
+from __future__ import with_statement
+from StringIO import StringIO
 import os.path
 
 # 3rd party imports
@@ -61,7 +55,7 @@ def test_write_empty_workbook():
 def test_write_virtual_workbook():
     old_wb = Workbook()
     saved_wb = save_virtual_workbook(old_wb)
-    new_wb = load_workbook(BytesIO(saved_wb))
+    new_wb = load_workbook(StringIO(saved_wb))
     assert new_wb
 
 
@@ -105,16 +99,6 @@ def test_write_hidden_worksheet():
             'sheet1.xml'), content)
 
 
-def test_write_bool():
-    wb = Workbook()
-    ws = wb.create_sheet()
-    ws.cell('F42').value = False
-    ws.cell('F43').value = True
-    content = write_worksheet(ws, {}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'sheet1_bool.xml'), content)
-
-
 def test_write_formula():
     wb = Workbook()
     ws = wb.create_sheet()
@@ -130,7 +114,6 @@ def test_write_style():
     wb = Workbook()
     ws = wb.create_sheet()
     ws.cell('F1').value = '13%'
-    ws.column_dimensions['F'].style_index = 2
     style_id_by_hash = StyleWriter(wb).get_style_by_hash()
     content = write_worksheet(ws, {}, style_id_by_hash)
     assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
@@ -179,69 +162,3 @@ def test_hyperlink_value():
     eq_("http://test.com", ws.cell('A1').value)
     ws.cell('A1').value = "test"
     eq_("test", ws.cell('A1').value)
-
-def test_write_auto_filter():
-    wb = Workbook()
-    ws = wb.worksheets[0]
-    ws.cell('F42').value = 'hello'
-    ws.auto_filter = 'A1:F1'
-    content = write_worksheet(ws, {'hello': 0}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'sheet1_auto_filter.xml'), content)
-
-    content = write_workbook(wb)
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'workbook_auto_filter.xml'), content)
-
-
-def test_freeze_panes_horiz():
-    wb = Workbook()
-    ws = wb.create_sheet()
-    ws.cell('F42').value = 'hello'
-    ws.freeze_panes = 'A4'
-    content = write_worksheet(ws, {'hello': 0}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'sheet1_freeze_panes_horiz.xml'), content)
-
-def test_freeze_panes_vert():
-    wb = Workbook()
-    ws = wb.create_sheet()
-    ws.cell('F42').value = 'hello'
-    ws.freeze_panes = 'D1'
-    content = write_worksheet(ws, {'hello': 0}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'sheet1_freeze_panes_vert.xml'), content)
-    pass
-
-def test_freeze_panes_both():
-    wb = Workbook()
-    ws = wb.create_sheet()
-    ws.cell('F42').value = 'hello'
-    ws.freeze_panes = 'D4'
-    content = write_worksheet(ws, {'hello': 0}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'sheet1_freeze_panes_both.xml'), content)
-
-def test_long_number():
-    wb = Workbook()
-    ws = wb.create_sheet()
-    ws.cell('A1').value = 9781231231230
-    content = write_worksheet(ws, {}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'long_number.xml'), content)
-
-def test_decimal():
-    wb = Workbook()
-    ws = wb.create_sheet()
-    ws.cell('A1').value = decimal.Decimal('3.14')
-    content = write_worksheet(ws, {}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'decimal.xml'), content)
-
-def test_short_number():
-    wb = Workbook()
-    ws = wb.create_sheet()
-    ws.cell('A1').value = 1234567890
-    content = write_worksheet(ws, {}, {})
-    assert_equals_file_content(os.path.join(DATADIR, 'writer', 'expected', \
-            'short_number.xml'), content)

@@ -1,7 +1,6 @@
-# coding: utf-8
 # file openpyxl/tests/test_workbook.py
 
-# Copyright (c) 2010-2011 openpyxl
+# Copyright (c) 2010 openpyxl
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,27 +21,18 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 # 3rd party imports
 from nose.tools import eq_, with_setup, raises
-
-try:  # For Python 3.2 and later
-    from nose.tools import assert_is_instance
-except ImportError:
-    def assert_is_instance(a, b):
-        assert isinstance(a, b)
-
 import os.path as osp
 
 # package imports
 from openpyxl.workbook import Workbook
-from openpyxl.reader.excel import load_workbook
 from openpyxl.namedrange import NamedRange
 from openpyxl.shared.exc import ReadOnlyWorkbookException
 from openpyxl.tests.helper import TMPDIR, clean_tmpdir, make_tmpdir
 
-import datetime
 
 def test_get_active_sheet():
     wb = Workbook()
@@ -55,21 +45,6 @@ def test_create_sheet():
     new_sheet = wb.create_sheet(0)
     eq_(new_sheet, wb.worksheets[0])
 
-def test_create_sheet_with_name():
-    wb = Workbook()
-    new_sheet = wb.create_sheet(0, title='LikeThisName')
-    eq_(new_sheet, wb.worksheets[0])
-
-def test_add_correct_sheet():
-    wb = Workbook()
-    new_sheet = wb.create_sheet(0)
-    wb.add_sheet(new_sheet)
-    eq_(new_sheet, wb.worksheets[2])
-
-@raises(AssertionError)
-def test_add_incorrect_sheet():
-    wb = Workbook()
-    wb.add_sheet("Test")
 
 @raises(ReadOnlyWorkbookException)
 def test_create_sheet_readonly():
@@ -142,93 +117,12 @@ def test_remove_named_range():
     named_ranges_list = wb.get_named_ranges()
     assert named_range not in named_ranges_list
 
-@with_setup(setup=make_tmpdir, teardown=clean_tmpdir)
+@with_setup(setup = make_tmpdir, teardown = clean_tmpdir)
 def test_add_local_named_range():
     wb = Workbook()
     new_sheet = wb.create_sheet()
     named_range = NamedRange('test_nr', [(new_sheet, 'A1')])
-    named_range.scope = new_sheet
+    named_range.local_only = True
     wb.add_named_range(named_range)
     dest_filename = osp.join(TMPDIR, 'local_named_range_book.xlsx')
     wb.save(dest_filename)
-
-
-@with_setup(setup=make_tmpdir, teardown=clean_tmpdir)
-def test_write_regular_date():
-
-    today = datetime.datetime(2010, 1, 18, 14, 15, 20, 1600)
-
-    book = Workbook()
-    sheet = book.get_active_sheet()
-    sheet.cell("A1").value = today
-    dest_filename = osp.join(TMPDIR, 'date_read_write_issue.xlsx')
-    book.save(dest_filename)
-
-    test_book = load_workbook(dest_filename)
-    test_sheet = test_book.get_active_sheet()
-
-    eq_(test_sheet.cell("A1").value, today)
-
-@with_setup(setup=make_tmpdir, teardown=clean_tmpdir)
-def test_write_regular_float():
-
-    float_value = 1.0 / 3.0
-    book = Workbook()
-    sheet = book.get_active_sheet()
-    sheet.cell("A1").value = float_value
-    dest_filename = osp.join(TMPDIR, 'float_read_write_issue.xlsx')
-    book.save(dest_filename)
-
-    test_book = load_workbook(dest_filename)
-    test_sheet = test_book.get_active_sheet()
-
-    eq_(test_sheet.cell("A1").value, float_value)
-
-@raises(UnicodeDecodeError)
-def test_bad_encoding():
-
-    try:
-        # Python 2
-        pound = unichr(163)
-    except NameError:
-        # Python 3
-        pound = chr(163)
-    test_string = ('Compound Value (' + pound + ')').encode('latin1')
-
-    utf_book = Workbook()
-    utf_sheet = utf_book.get_active_sheet()
-    utf_sheet.cell('A1').value = test_string
-
-def test_good_encoding():
-
-    try:
-        # Python 2
-        pound = unichr(163)
-    except NameError:
-        # Python 3
-        pound = chr(163)
-    test_string = ('Compound Value (' + pound + ')').encode('latin1')
-
-    lat_book = Workbook(encoding='latin1')
-    lat_sheet = lat_book.get_active_sheet()
-    lat_sheet.cell('A1').value = test_string
-
-
-class AlternativeWorksheet(object):
-    def __init__(self, parent_workbook, title=None):
-        self.parent_workbook = parent_workbook
-        if not title:
-            title = 'AlternativeSheet'
-        self.title = title
-
-
-def test_worksheet_class():
-    wb = Workbook(worksheet_class=AlternativeWorksheet)
-    assert_is_instance(wb.worksheets[0], AlternativeWorksheet)
-
-
-@raises(AssertionError)
-def test_add_invalid_worksheet_class_instance():
-    wb = Workbook()
-    ws = AlternativeWorksheet(parent_workbook=wb)
-    wb.add_sheet(worksheet=ws)

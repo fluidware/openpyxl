@@ -1,6 +1,6 @@
 # file openpyxl/shared/xmltools.py
 
-# Copyright (c) 2010-2011 openpyxl
+# Copyright (c) 2010 openpyxl
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 #
 # @license: http://www.opensource.org/licenses/mit-license.php
-# @author: see AUTHORS file
+# @author: Eric Gazoni
 
 """Shared xml tools.
 
@@ -31,15 +31,15 @@ Shortcut functions taken from:
 """
 
 # Python stdlib imports
+from __future__ import with_statement
 from xml.sax.xmlreader import AttributesNSImpl
-from openpyxl.shared.compat.sax import XMLGenerator
-from openpyxl.shared.compat import OrderedDict
+from xml.sax.saxutils import XMLGenerator
 try:
     from xml.etree.ElementTree import ElementTree, Element, SubElement, \
-            QName, fromstring, tostring, register_namespace
+            QName, fromstring, tostring
 except ImportError:
     from cElementTree import ElementTree, Element, SubElement, \
-            QName, fromstring, tostring, register_namespace
+            QName, fromstring, tostring
 
 # package imports
 from openpyxl import __name__ as prefix
@@ -72,15 +72,9 @@ def start_tag(doc, name, attr=None, body=None, namespace=None):
     """Wrapper to start an xml tag."""
     if attr is None:
         attr = {}
-        dct_type = dict
-    elif isinstance(attr, OrderedDict):
-        dct_type = OrderedDict
-    else:
-        dct_type = dict
-
-    attr_vals = dct_type()
-    attr_keys = dct_type()
-    for key, val in attr.items():
+    attr_vals = {}
+    attr_keys = {}
+    for key, val in attr.iteritems():
         key_tuple = (namespace, key)
         attr_vals[key_tuple] = val
         attr_keys[key_tuple] = key
